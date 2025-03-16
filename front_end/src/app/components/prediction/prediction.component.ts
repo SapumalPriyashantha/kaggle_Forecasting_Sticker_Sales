@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { PredictionService } from 'src/app/services/prediction.service';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 
 @Component({
   selector: 'app-prediction',
@@ -8,33 +9,38 @@ import { PredictionService } from 'src/app/services/prediction.service';
 })
 export class PredictionComponent {
 
-  // Define variables for user input
-  country: string = '';
-  store: string = '';
-  product: string = '';
-  date: string = '';
+  predictionForm: FormGroup;
   predictionResult: any = null;
   errorMessage: string = '';
 
-  constructor(private predictionService: PredictionService) { }
+  countries: string[] = ['Canada', 'Finland', 'Italy', 'Kenya', 'Norway', 'Singapore'];
+  stores: string[] = ['Discount Stickers', 'Stickers for Less', 'Premium Sticker Mart'];
+  products: string[] = ['Holographic Goose', 'Kaggle', 'Kaggle Tiers', 'Kerneler', 'Kerneler Dark Mode'];
 
-  // Method to handle form submission
+  constructor(private predictionService: PredictionService, private fb: FormBuilder) {
+    this.predictionForm = this.fb.group({
+      country: ['', Validators.required],
+      store: ['', Validators.required],
+      product: ['', Validators.required],
+      date: ['', [Validators.required, Validators.pattern('^\\d{4}-\\d{2}-\\d{2}$')]],
+      num_sold: [0, Validators.required]
+    });
+  }
+
   onSubmit() {
-    const data = {
-      country: [this.country],
-      store: [this.store],
-      product: [this.product],
-      date: [this.date]
-    };
+    if (this.predictionForm.valid) {
+      const data = this.predictionForm.value;
 
-    // Call the prediction service to get predictions from Flask API
-    this.predictionService.getPredictions(data).subscribe(
-      (response) => {
-        this.predictionResult = response.predictions;
-      },
-      (error) => {
-        this.errorMessage = 'Error occurred: ' + error.message;
-      }
-    );
+      this.predictionService.getPredictions(data).subscribe(
+        (response) => {
+          this.predictionResult = response.predictions;
+        },
+        (error) => {
+          this.errorMessage = 'Error occurred: ' + error.error;
+        }
+      );
+    } else {
+      this.errorMessage = 'Please fill out the form correctly.';
+    }
   }
 }
